@@ -1,0 +1,15 @@
+# Archivos de sistema
+.DS_Store
+
+# Backend: artefactos de compilación generados en el host (macOS)
+**/bin/
+**/obj/
+
+# Frontend: dependencias y salida de build generadas en el host
+PosFrontend/node_modules/
+PosFrontend/dist/
+
+# Control de versiones y configuración de IDE
+.git/
+.gitignore
+.vscode/

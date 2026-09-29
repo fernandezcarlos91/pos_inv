@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* ==========================================================================
+   Estilos de Impresión Térmica para Rollos de 80mm
+   ========================================================================== */
+@media print {
+  /* Configuración del tamaño del rollo: 80mm de ancho con altura continua automática */
+  @page {
+    size: 80mm auto;
+    margin: 0mm !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 80mm !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar toda la interfaz gráfica de la aplicación React y elementos fuera del ticket */
+  #root,
+  .no-print,
+  header,
+  nav,
+  aside,
+  button {
+    display: none !important;
+  }
+
+  /* Mostrar exclusivamente el ticket térmico montado en document.body */
+  #ticket-termico-print {
+    display: block !important;
+    position: static !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+    padding: 3mm 4mm 12mm 4mm !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, 'Lucida Console', monospace !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    visibility: visible !important;
+  }
+
+  #ticket-termico-print * {
+    visibility: visible !important;
+    color: #000000 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Mostrar contenedor de etiquetas de códigos de barra montado en document.body */
+  #etiqueta-print-root {
+    display: block !important;
+    position: static !important;
+    margin: 0 auto !important;
+    padding: 1mm !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    visibility: visible !important;
+  }
+
+  #etiqueta-print-root * {
+    visibility: visible !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .etiqueta-item-print {
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin: 0 auto 3mm auto !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .etiqueta-item-print:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  body.printing-etiqueta-58 {
+    width: 58mm !important;
+  }
+
+  body.printing-etiqueta-80 {
+    width: 80mm !important;
+  }
+}
+
+@media screen {
+  #ticket-termico-print,
+  #etiqueta-print-root {
+    display: none !important;
+  }
+}

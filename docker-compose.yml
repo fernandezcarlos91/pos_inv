@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: pos-postgres
+    environment:
+      POSTGRES_DB: pos_inv
+      POSTGRES_USER: pos_user
+      POSTGRES_PASSWORD: pos_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pos_user -d pos_inv"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: pos-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=pos_inv;Username=pos_user;Password=pos_password"
+      JwtSettings__SecretKey: "this-is-a-very-secret-key-for-pos-system-minimum-32-chars"
+      JwtSettings__Issuer: "PosBackend"
+      JwtSettings__Audience: "PosClient"
+      JwtSettings__ExpiryMinutes: "1440"
+    ports:
+      # Host 5001 -> contenedor 8080. Se usa 5001 porque el puerto 5000 del host está
+      # ocupado por AirPlay Receiver de macOS (ControlCenter). Ver README/notas de entorno.
+      - "5001:8080"
+    networks:
+      - pos-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: pos-frontend
+    ports:
+      # Host 8080 -> contenedor nginx 80. Se usa 8080 porque el puerto 80 del host está
+      # ocupado por XAMPP Apache. El frontend consume la API en el mismo origen (/api).
+      - "8080:80"
+    networks:
+      - pos-network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  pos-network:
+    driver: bridge

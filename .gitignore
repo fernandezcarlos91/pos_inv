@@ -1,0 +1,22 @@
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# .NET / NuGet
+.dotnet/
+.nuget/
+.local/
+Library/
+**/bin/
+**/obj/
+
+# IDE / herramientas
+.vscode/
+.idea/
+.clinerules
+
+# Otros
+*.user
+*.suo
