@@ -8,9 +8,33 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar puerto de escucha si la variable de entorno PORT está definida (Render.com la inyecta, ej. 10000)
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Configuración de CORS permitiendo cualquier origen para desarrollo/demo y despliegue en Render
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Configure JWT Settings from appsettings.json
 // Se enlaza la instancia concreta para la inyección directa en AuthController
@@ -69,7 +93,15 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-app.UseHttpsRedirection();
+// CORS debe ejecutarse antes de Authentication y Authorization
+app.UseCors("AllowAll");
+
+// Quitar o condicionar app.UseHttpsRedirection() para que no rompa en Render free ni detrás de proxies inversos
+if (app.Environment.IsDevelopment() && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PORT")))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
