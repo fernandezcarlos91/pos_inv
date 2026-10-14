@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import type { UsuarioResponseDto, CrearUsuarioDto, ActualizarUsuarioDto } from '../DTOs/UsuarioDto';
+import type { UsuarioResponseDto, CrearUsuarioDto, ActualizarUsuarioDto, RestablecerPasswordDto } from '../DTOs/UsuarioDto';
 import { 
   Users, 
   UserPlus, 
@@ -16,7 +16,11 @@ import {
   RotateCw,
   Lock,
   Mail,
-  User as UserIcon
+  User as UserIcon,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Wand2
 } from 'lucide-react';
 
 export const UsuariosPage: React.FC = () => {
@@ -47,6 +51,92 @@ export const UsuariosPage: React.FC = () => {
     IsActive: true
   });
   const [editing, setEditing] = useState(false);
+
+  // Estados de modal Restablecer Contraseña
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetTargetUser, setResetTargetUser] = useState<UsuarioResponseDto | null>(null);
+  const [resetForm, setResetForm] = useState({
+    NuevaPassword: '',
+    ConfirmarPassword: '',
+  });
+  const [showResetPass, setShowResetPass] = useState(false);
+  const [showConfirmResetPass, setShowConfirmResetPass] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetModalError, setResetModalError] = useState<string | null>(null);
+
+  const openRestablecer = (u: UsuarioResponseDto) => {
+    setResetTargetUser(u);
+    setResetForm({ NuevaPassword: '', ConfirmarPassword: '' });
+    setShowResetPass(false);
+    setShowConfirmResetPass(false);
+    setResetModalError(null);
+    setShowResetModal(true);
+  };
+
+  const generarPasswordSegura = () => {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+    let pass = '';
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setResetForm({ NuevaPassword: pass, ConfirmarPassword: pass });
+    setShowResetPass(true);
+    setShowConfirmResetPass(true);
+  };
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTargetUser) return;
+
+    setResetModalError(null);
+
+    if (!resetForm.NuevaPassword) {
+      setResetModalError('Debes ingresar la nueva contraseña.');
+      return;
+    }
+
+    if (resetForm.NuevaPassword.length < 8) {
+      setResetModalError('La nueva contraseña debe tener como mínimo 8 caracteres.');
+      return;
+    }
+
+    if (resetForm.ConfirmarPassword && resetForm.NuevaPassword !== resetForm.ConfirmarPassword) {
+      setResetModalError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const payload: RestablecerPasswordDto = {
+        NuevaPassword: resetForm.NuevaPassword,
+        ConfirmarPassword: resetForm.ConfirmarPassword || resetForm.NuevaPassword,
+      };
+
+      const response = await api.post(`/usuarios/${resetTargetUser.Id}/restablecer-password`, payload);
+      const okMsg = response.data?.message || response.data?.Message || `Contraseña restablecida exitosamente para ${resetTargetUser.Nombre}.`;
+
+      setMessage({ type: 'success', text: okMsg });
+      setShowResetModal(false);
+      setResetTargetUser(null);
+      setResetForm({ NuevaPassword: '', ConfirmarPassword: '' });
+    } catch (err: any) {
+      let errMsg = 'Error al restablecer la contraseña.';
+      if (err.response?.data?.message) {
+        errMsg = err.response.data.message;
+      } else if (err.response?.data?.Message) {
+        errMsg = err.response.data.Message;
+      } else if (err.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const firstKey = Object.keys(errors)[0];
+        if (firstKey && Array.isArray(errors[firstKey]) && errors[firstKey].length > 0) {
+          errMsg = errors[firstKey][0];
+        }
+      }
+      setResetModalError(errMsg);
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const fetchUsuarios = async () => {
     setLoading(true);
@@ -319,6 +409,13 @@ export const UsuariosPage: React.FC = () => {
                             title="Editar usuario o rol"
                           >
                             <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openRestablecer(u)}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title={`Restablecer contraseña de ${u.Nombre}`}
+                          >
+                            <KeyRound className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleToggleEstado(u)}
@@ -601,6 +698,154 @@ export const UsuariosPage: React.FC = () => {
                   className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors disabled:opacity-50"
                 >
                   {editing ? 'Guardando...' : 'Actualizar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Restablecer Contraseña (Solo Admin) */}
+      {showResetModal && resetTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-xl shadow-xs">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Restablecer Contraseña</h3>
+                  <p className="text-xs text-gray-500">Asigna una nueva clave a este usuario</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!resetting) setShowResetModal(false);
+                }}
+                disabled={resetting}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetSubmit} className="p-6 space-y-4">
+              {/* Tarjeta de usuario afectado */}
+              <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200/80 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-gray-900 block">
+                    {resetTargetUser.Nombre}
+                  </span>
+                  <span className="text-xs font-mono text-gray-500">
+                    {resetTargetUser.Email}
+                  </span>
+                </div>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  resetTargetUser.Rol === 'Admin'
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {resetTargetUser.Rol}
+                </span>
+              </div>
+
+              {resetModalError && (
+                <div className="p-3.5 rounded-2xl text-xs flex items-center gap-2.5 bg-red-50 text-red-800 border border-red-200">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{resetModalError}</span>
+                </div>
+              )}
+
+              {/* Botón para generar clave segura */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={generarPasswordSegura}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Generar clave sugerida
+                </button>
+              </div>
+
+              {/* Nueva Contraseña */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Nueva Contraseña <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                  <input
+                    type={showResetPass ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={resetForm.NuevaPassword}
+                    onChange={(e) => setResetForm({ ...resetForm, NuevaPassword: e.target.value })}
+                    placeholder="Mínimo 8 caracteres"
+                    disabled={resetting}
+                    className="w-full pl-10 pr-10 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPass(!showResetPass)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showResetPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirmar Nueva Contraseña */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Confirmar Nueva Contraseña <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                  <input
+                    type={showConfirmResetPass ? 'text' : 'password'}
+                    required
+                    value={resetForm.ConfirmarPassword}
+                    onChange={(e) => setResetForm({ ...resetForm, ConfirmarPassword: e.target.value })}
+                    placeholder="Repetir la nueva contraseña"
+                    disabled={resetting}
+                    className="w-full pl-10 pr-10 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmResetPass(!showConfirmResetPass)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showConfirmResetPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  disabled={resetting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 rounded-xl border border-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetting}
+                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                >
+                  {resetting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Restableciendo...
+                    </>
+                  ) : (
+                    'Restablecer Clave'
+                  )}
                 </button>
               </div>
             </form>

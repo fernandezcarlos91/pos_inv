@@ -26,6 +26,11 @@ public class ServicioAutenticacion : IServicioAutenticacion
             new Claim(ClaimTypes.Role, ObtenerNombreRol(usuario.Rol))
         };
 
+        if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
+        {
+            throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+        }
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

@@ -179,6 +179,39 @@ public class UsuariosController : ControllerBase
         return Ok(MapToResponse(usuario));
     }
 
+    [HttpPost("{id:int}/restablecer-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> RestablecerPassword(int id, [FromBody] RestablecerPasswordDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.ConfirmarPassword) && dto.NuevaPassword != dto.ConfirmarPassword)
+        {
+            return BadRequest(new { message = "La nueva contraseña y su confirmación no coinciden." });
+        }
+
+        if (dto.NuevaPassword.Length < 8)
+        {
+            return BadRequest(new { message = "La nueva contraseña debe tener al menos 8 caracteres." });
+        }
+
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+        if (usuario is null)
+        {
+            return NotFound(new { message = $"No se encontró el usuario con id {id}." });
+        }
+
+        usuario.PasswordHash = _authService.HashPassword(dto.NuevaPassword);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Contraseña restablecida exitosamente para el usuario '{usuario.Nombre}'." });
+    }
+
     private UsuarioResponseDto MapToResponse(Usuario usuario) => new()
     {
         Id = usuario.Id,

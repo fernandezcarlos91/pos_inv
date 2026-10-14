@@ -22,3 +22,15 @@ export interface ActualizarUsuarioDto {
   IsActive?: boolean;
 }
 
+export interface CambiarPasswordDto {
+  ActualPassword: string;
+  NuevaPassword: string;
+  ConfirmarPassword: string;
+}
+
+export interface RestablecerPasswordDto {
+  NuevaPassword: string;
+  ConfirmarPassword?: string;
+}
+
+

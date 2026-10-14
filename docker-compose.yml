@@ -26,12 +26,13 @@ services:
       dockerfile: Dockerfile.backend
     container_name: pos-backend
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=pos_inv;Username=pos_user;Password=pos_password"
-      JwtSettings__SecretKey: "this-is-a-very-secret-key-for-pos-system-minimum-32-chars"
-      JwtSettings__Issuer: "PosBackend"
-      JwtSettings__Audience: "PosClient"
-      JwtSettings__ExpiryMinutes: "1440"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:-Host=postgres;Port=5432;Database=pos_inv;Username=pos_user;Password=pos_password}
+      JwtSettings__SecretKey: ${JwtSettings__SecretKey:-dev-local-secret-key-pos-system-development-minimum-32-chars}
+      JwtSettings__Issuer: ${JwtSettings__Issuer:-PosBackend}
+      JwtSettings__Audience: ${JwtSettings__Audience:-PosClient}
+      JwtSettings__ExpiryMinutes: ${JwtSettings__ExpiryMinutes:-1440}
+      Cors__AllowedOrigins: ${Cors__AllowedOrigins:-http://localhost:8080,http://localhost:5001,http://localhost:5173}
     ports:
       # Host 5001 -> contenedor 8080. Se usa 5001 porque el puerto 5000 del host está
       # ocupado por AirPlay Receiver de macOS (ControlCenter). Ver README/notas de entorno.

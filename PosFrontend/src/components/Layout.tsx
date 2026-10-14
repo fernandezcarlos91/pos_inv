@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CambiarPasswordModal } from './CambiarPasswordModal';
 import { 
   Store, 
   LayoutDashboard, 
@@ -11,13 +12,15 @@ import {
   LogOut, 
   ShieldCheck, 
   UserCheck,
-  Users 
+  Users,
+  KeyRound
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
   const { rol, usuario, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -88,8 +91,8 @@ export const Layout: React.FC = () => {
               </nav>
             </div>
 
-            {/* Perfil del Usuario y Salir */}
-            <div className="flex items-center gap-3">
+            {/* Perfil del Usuario y Acciones */}
+            <div className="flex items-center gap-2.5">
               {/* Badge de Rol y Nombre */}
               <div className="flex items-center gap-2.5 px-3 py-1.5 bg-gray-50 border border-gray-200/80 rounded-xl">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
@@ -108,6 +111,16 @@ export const Layout: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Botón Cambiar Contraseña */}
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 hover:text-indigo-700 hover:bg-indigo-50/80 rounded-xl border border-gray-200/80 hover:border-indigo-200 transition-colors shadow-2xs"
+                title="Cambiar mi contraseña"
+              >
+                <KeyRound className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span className="hidden sm:inline">Cambiar Clave</span>
+              </button>
 
               {/* Botón Salir */}
               <button
@@ -139,6 +152,13 @@ export const Layout: React.FC = () => {
                 </Link>
               );
             })}
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 text-gray-600 hover:bg-gray-100"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Cambiar Clave</span>
+            </button>
           </div>
         </div>
       </header>
@@ -147,6 +167,12 @@ export const Layout: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>
+
+      {/* Modal Cambiar Contraseña del Usuario Autenticado */}
+      <CambiarPasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 };

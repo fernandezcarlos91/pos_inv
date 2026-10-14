@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PosBackend.Data;
@@ -100,6 +102,62 @@ public class AuthController : ControllerBase
             NombreAdmin = adminValido.Nombre,
             EmailAdmin = adminValido.Email
         });
+    }
+
+    [Authorize]
+    [HttpPost("cambiar-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> CambiarPassword([FromBody] CambiarPasswordDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "Sesión inválida o expirada." });
+        }
+
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
+        if (usuario is null)
+        {
+            return NotFound(new { message = "Usuario no encontrado." });
+        }
+
+        if (!usuario.IsActive)
+        {
+            return Unauthorized(new { message = "La cuenta de usuario se encuentra desactivada." });
+        }
+
+        if (dto.NuevaPassword != dto.ConfirmarPassword)
+        {
+            return BadRequest(new { message = "La nueva contraseña y su confirmación no coinciden." });
+        }
+
+        if (dto.NuevaPassword.Length < 8)
+        {
+            return BadRequest(new { message = "La nueva contraseña debe tener al menos 8 caracteres." });
+        }
+
+        if (!_authService.VerifyPassword(dto.ActualPassword, usuario.PasswordHash))
+        {
+            return BadRequest(new { message = "La contraseña actual no es correcta." });
+        }
+
+        if (dto.ActualPassword == dto.NuevaPassword)
+        {
+            return BadRequest(new { message = "La nueva contraseña debe ser diferente a la contraseña actual." });
+        }
+
+        usuario.PasswordHash = _authService.HashPassword(dto.NuevaPassword);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Contraseña actualizada exitosamente." });
     }
 
     private UsuarioResponseDto MapToResponse(Usuario usuario) => new()

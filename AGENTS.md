@@ -93,15 +93,23 @@ PosBackend/
   - Si son correctas y el usuario está activo, genera token JWT
   - Retorna `AuthResponseDto` con token y datos del usuario
 
-### Configuración JWT (appsettings.json):
-```json
-"JwtSettings": {
-  "SecretKey": "this-is-a-very-secret-key-for-pos-system-minimum-32-chars",
-  "Issuer": "PosBackend",
-  "Audience": "PosClient",
-  "ExpiryMinutes": 1440
-}
-```
+- **POST /api/auth/cambiar-password** (`[Authorize]`): Cambiar propia contraseña
+  - Requiere autenticación JWT (Admin y Cajero)
+  - Recibe `ActualPassword`, `NuevaPassword` (mínimo 8 caracteres) y `ConfirmarPassword`
+  - Valida que la actual sea correcta, que las nuevas coincidan y sean distintas a la actual
+  - Encripta con BCrypt y guarda cambios sin retornar hashes
+
+- **POST /api/usuarios/{id}/restablecer-password** (`[Authorize(Roles = "Admin")]`): Restablecer contraseña
+  - Solo accesible por el rol Admin
+  - Recibe `NuevaPassword` (mínimo 8 caracteres) y `ConfirmarPassword`
+  - Encripta con BCrypt y actualiza la clave del usuario destino de forma inmediata
+
+### Configuración de Seguridad y JWT (Variables de entorno / appsettings.json):
+- `JwtSettings:SecretKey`: Inyectada en producción vía variable de entorno `JwtSettings__SecretKey` (mínimo 32 caracteres).
+- `JwtSettings:Issuer`: `PosBackend`
+- `JwtSettings:Audience`: `PosClient`
+- `JwtSettings:ExpiryMinutes`: 1440
+- `Cors:AllowedOrigins`: Inyectada en producción vía variable de entorno `Cors__AllowedOrigins` (orígenes separados por coma). En Development permite localhost por defecto. En Production rechaza peticiones CORS de forma segura si no hay orígenes configurados.
 
 ### Hashing de contraseñas:
 - Utiliza `BCrypt.Net-Next` para hashing y verificación

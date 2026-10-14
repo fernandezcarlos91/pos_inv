@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth, normalizeUser } from '../context/AuthContext';
-import { Store, Mail, Lock, ArrowRight, AlertCircle, UserCheck, ShieldCheck } from 'lucide-react';
+import { Store, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface LoginFormValues {
   email: string;
@@ -58,11 +58,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const fillCredentials = (email: string, pass: string) => {
-    setForm({ email, password: pass });
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-100 p-8 sm:p-10 animate-in fade-in zoom-in-95 duration-200">
@@ -93,7 +88,7 @@ export const LoginPage: React.FC = () => {
               <input
                 type="email"
                 name="email"
-                placeholder="cajero@pos.com"
+                placeholder="correo@ejemplo.com"
                 value={form.email}
                 onChange={handleChange}
                 required
@@ -137,29 +132,6 @@ export const LoginPage: React.FC = () => {
             )}
           </button>
         </form>
-
-        {/* Acceso Rápido a Credenciales Predeterminadas */}
-        <div className="mt-6 pt-4 border-t border-gray-100">
-          <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">
-            Cuentas Predeterminadas (Demo)
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => fillCredentials('cajero@pos.com', 'Cajero123!')}
-              className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5" /> Cajero
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials('admin@pos.com', 'Admin123!')}
-              className="py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" /> Admin
-            </button>
-          </div>
-        </div>
 
         {/* Nota de Seguridad */}
         <div className="mt-6 pt-4 border-t border-gray-100 text-center text-xs text-gray-400">
